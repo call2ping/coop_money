@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>เปรียบเทียบดอกเบี้ย เงินฝาก / เงินกู้</title>
+<style>
+  :root{
+    --bg:#0f172a; --card:#1e293b; --card2:#273449;
+    --line:#334155; --text:#e2e8f0; --muted:#94a3b8;
+    --a:#38bdf8; --b:#f472b6; --good:#34d399; --bad:#f87171;
+    --accent:#fbbf24;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:"Segoe UI","Sarabun",system-ui,sans-serif;
+    background:linear-gradient(160deg,#0b1220,#0f172a 40%,#111d33);
+    color:var(--text); min-height:100vh; padding:24px 16px; line-height:1.5;
+  }
+  .wrap{max-width:1080px;margin:0 auto}
+  header{text-align:center;margin-bottom:24px}
+  header h1{font-size:1.9rem;font-weight:800;letter-spacing:.3px}
+  header p{color:var(--muted);margin-top:6px;font-size:.95rem}
+
+  .tabs{display:flex;gap:8px;justify-content:center;margin:20px 0}
+  .tab{
+    padding:10px 22px;border-radius:999px;border:1px solid var(--line);
+    background:var(--card);color:var(--muted);cursor:pointer;font-weight:600;
+    font-size:1rem;transition:.15s;
+  }
+  .tab.active{background:var(--a);color:#04263a;border-color:var(--a)}
+  body.loan .tab.active{background:var(--b);color:#3a0a22;border-color:var(--b)}
+
+  .grid{display:grid;grid-template-columns:340px 1fr;gap:20px}
+  @media(max-width:860px){.grid{grid-template-columns:1fr}}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px}
+  .card h2{font-size:1.05rem;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+
+  label{display:block;font-size:.85rem;color:var(--muted);margin:14px 0 6px}
+  label:first-of-type{margin-top:0}
+  input,select{
+    width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--line);
+    background:var(--card2);color:var(--text);font-size:1rem;font-family:inherit;
+  }
+  input:focus,select:focus{outline:none;border-color:var(--a)}
+  .row{display:flex;gap:12px}
+  .row>div{flex:1}
+
+  .dot{width:12px;height:12px;border-radius:50%;display:inline-block}
+  .dot.a{background:var(--a)} .dot.b{background:var(--b)}
+
+  .seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .seg button{
+    flex:1;padding:9px;background:var(--card2);color:var(--muted);border:none;
+    cursor:pointer;font-family:inherit;font-size:.9rem;font-weight:600;
+  }
+  .seg button.on{background:var(--accent);color:#3a2c04}
+
+  /* results */
+  .cards2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+  .res{border-radius:14px;padding:16px;border:1px solid var(--line);background:var(--card2)}
+  .res.a{border-top:3px solid var(--a)} .res.b{border-top:3px solid var(--b)}
+  .res .name{font-size:.85rem;color:var(--muted);display:flex;align-items:center;gap:7px}
+  .res .big{font-size:1.55rem;font-weight:800;margin:6px 0 2px}
+  .res .sub{font-size:.8rem;color:var(--muted)}
+
+  .verdict{
+    text-align:center;padding:14px;border-radius:14px;font-weight:700;
+    background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.35);margin-bottom:16px;
+  }
+  .verdict span{color:var(--good)}
+
+  table{width:100%;border-collapse:collapse;font-size:.85rem;margin-top:8px}
+  th,td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--line)}
+  th:first-child,td:first-child{text-align:left}
+  th{color:var(--muted);font-weight:600}
+  td.hl{color:var(--accent);font-weight:700}
+  .tbl-wrap{max-height:340px;overflow:auto;border-radius:10px;border:1px solid var(--line)}
+
+  canvas{width:100%;height:260px;margin-top:6px}
+  .legend{display:flex;gap:18px;justify-content:center;font-size:.85rem;color:var(--muted);margin-top:8px}
+  .legend span{display:flex;align-items:center;gap:6px}
+  .note{font-size:.78rem;color:var(--muted);margin-top:10px}
+  .hide{display:none}
+</style>
+</head>
+<body class="deposit">
+<div class="wrap">
+  <header>
+    <h1>💰 เปรียบเทียบดอกเบี้ย</h1>
+    <p>เทียบ 2 อัตราที่ต่างกัน สำหรับ เงินฝาก หรือ เงินกู้ ในระยะเวลาที่ต้องการ</p>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" data-mode="deposit">🏦 เงินฝาก</button>
+    <button class="tab" data-mode="loan">📉 เงินกู้</button>
+  </div>
+
+  <div class="grid">
+    <!-- INPUT -->
+    <div class="card">
+      <h2>⚙️ ตั้งค่า</h2>
+
+      <label id="lblPrincipal">เงินต้น / ยอดฝาก (บาท)</label>
+      <input type="number" id="principal" value="100000" min="0" step="1000">
+
+      <label>ระยะเวลา</label>
+      <div class="row">
+        <div><input type="number" id="duration" value="3" min="1" step="1"></div>
+        <div>
+          <select id="durUnit">
+            <option value="12">ปี</option>
+            <option value="1">เดือน</option>
+          </select>
+        </div>
+      </div>
+
+      <label id="lblRate">อัตราดอกเบี้ยต่อปี (%)</label>
+      <div class="row">
+        <div>
+          <span style="font-size:.78rem;color:var(--a)" id="rateLabelA"><span class="dot a"></span> อัตรา A</span>
+          <input type="number" id="rateA" value="2.5" step="0.05">
+        </div>
+        <div>
+          <span style="font-size:.78rem;color:var(--b)" id="rateLabelB"><span class="dot b"></span> อัตรา B</span>
+          <input type="number" id="rateB" value="3.0" step="0.05">
+        </div>
+      </div>
+
+      <!-- deposit options -->
+      <div id="depOpts">
+        <label>วิธีคิดดอกเบี้ย</label>
+        <div class="seg" id="depMethod">
+          <button data-v="compound" class="on">ทบต้น</button>
+          <button data-v="simple">ดอกเบี้ยคงที่</button>
+        </div>
+        <label>ความถี่ทบต้น</label>
+        <select id="compFreq">
+          <option value="12">รายเดือน</option>
+          <option value="4">รายไตรมาส</option>
+          <option value="2">ราย 6 เดือน</option>
+          <option value="1">รายปี</option>
+        </select>
+      </div>
+
+      <!-- loan options -->
+      <div id="loanOpts" class="hide">
+        <p class="note" style="margin-top:0;background:var(--card2);padding:12px;border-radius:10px;border:1px solid var(--line)">
+          🔍 โหมดเงินกู้เทียบ <b style="color:var(--a)">Effective Rate (ลดต้นลดดอก)</b> กับ
+          <b style="color:var(--b)">Flat Rate (คงที่)</b><br>
+          • <b>Effective</b> = ดอกเบี้ยคิดจากเงินต้นคงเหลือ ผ่อนเท่ากันทุกงวด (สินเชื่อบ้าน/บุคคล)<br>
+          • <b>Flat</b> = ดอกเบี้ยคิดจากเงินต้นเต็มจำนวนทุกงวด (เช่าซื้อรถ) — กรอกตัวเลขเท่ากันก็ยังจ่ายแพงกว่า
+        </p>
+      </div>
+    </div>
+
+    <!-- RESULTS -->
+    <div class="card">
+      <h2>📊 ผลลัพธ์</h2>
+
+      <div class="cards2">
+        <div class="res a">
+          <div class="name"><span class="dot a"></span> <span id="rTagA"></span></div>
+          <div class="big" id="totalA">-</div>
+          <div class="sub" id="subA"></div>
+        </div>
+        <div class="res b">
+          <div class="name"><span class="dot b"></span> <span id="rTagB"></span></div>
+          <div class="big" id="totalB">-</div>
+          <div class="sub" id="subB"></div>
+        </div>
+      </div>
+
+      <div class="verdict" id="verdict"></div>
+
+      <canvas id="chart"></canvas>
+      <div class="legend">
+        <span><span class="dot a"></span> อัตรา A</span>
+        <span><span class="dot b"></span> อัตรา B</span>
+      </div>
+
+      <h2 style="margin-top:22px">📅 ตารางรายปี</h2>
+      <div class="tbl-wrap">
+        <table id="tbl"></table>
+      </div>
+      <p class="note" id="footNote"></p>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const baht = n => n.toLocaleString('th-TH',{maximumFractionDigits:0});
+const baht2 = n => n.toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+let mode = 'deposit';
+let depMethod = 'compound';
+
+// ---- tab + segment handlers ----
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+  mode = t.dataset.mode;
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===t));
+  document.body.className = mode;
+  $('depOpts').classList.toggle('hide', mode!=='deposit');
+  $('loanOpts').classList.toggle('hide', mode!=='loan');
+  const dep = mode==='deposit';
+  $('lblPrincipal').textContent = dep ? 'เงินต้น / ยอดฝาก (บาท)' : 'วงเงินกู้ (บาท)';
+  $('lblRate').textContent = dep ? 'อัตราดอกเบี้ยต่อปี (%)' : 'อัตราดอกเบี้ยที่ระบุต่อปี (%)';
+  $('rateLabelA').innerHTML = dep
+    ? '<span class="dot a"></span> อัตรา A'
+    : '<span class="dot a"></span> Effective (ลดต้นลดดอก)';
+  $('rateLabelB').innerHTML = dep
+    ? '<span class="dot b"></span> อัตรา B'
+    : '<span class="dot b"></span> Flat (คงที่)';
+  calc();
+});
+function seg(containerId, cb){
+  document.querySelectorAll('#'+containerId+' button').forEach(b=>b.onclick=()=>{
+    document.querySelectorAll('#'+containerId+' button').forEach(x=>x.classList.toggle('on',x===b));
+    cb(b.dataset.v); calc();
+  });
+}
+seg('depMethod', v=>depMethod=v);
+document.querySelectorAll('input,select').forEach(el=>el.addEventListener('input',calc));
+
+// ---- core math: returns yearly series ----
+// deposit: balance over time. loan: remaining + cumulative interest
+// loanMethod ('reducing'|'flat') only used in loan mode
+function simulate(rate, loanMethod){
+  const P = +$('principal').value || 0;
+  const months = (+$('duration').value || 0) * (+$('durUnit').value);
+  const r = rate/100;
+  const series = [{m:0, bal:P, interest:0, principalPaid:0}]; // monthly snapshots at year marks
+  let totalInterest = 0, payment = 0;
+
+  if(mode==='deposit'){
+    if(depMethod==='simple'){
+      for(let m=1;m<=months;m++){
+        const intTotal = P * r * (m/12);
+        series.push({m, bal:P+intTotal, interest:intTotal});
+      }
+      totalInterest = P*r*(months/12);
+      return {series, totalInterest, final:P+totalInterest, payment:0, P, months};
+    } else {
+      const f = +$('compFreq').value;        // compounding per year
+      const periodMonths = 12/f;
+      let bal = P;
+      for(let m=1;m<=months;m++){
+        if(m % periodMonths === 0) bal *= (1 + r/f);
+        series.push({m, bal, interest:bal-P});
+      }
+      totalInterest = bal - P;
+      return {series, totalInterest, final:bal, payment:0, P, months};
+    }
+  } else {
+    // loan
+    if(loanMethod==='flat'){
+      const totalInt = P * r * (months/12);
+      payment = (P + totalInt)/months;
+      let paidInt=0, bal=P;
+      const perInt = totalInt/months, perPrin = P/months;
+      for(let m=1;m<=months;m++){
+        paidInt += perInt; bal -= perPrin;
+        series.push({m, bal:Math.max(bal,0), interest:paidInt});
+      }
+      return {series, totalInterest:totalInt, final:P+totalInt, payment, P, months};
+    } else {
+      // reducing balance amortization
+      const i = r/12;
+      payment = i===0 ? P/months : P*i/(1-Math.pow(1+i,-months));
+      let bal=P, paidInt=0;
+      for(let m=1;m<=months;m++){
+        const intM = bal*i;
+        const prinM = payment-intM;
+        bal -= prinM; paidInt += intM;
+        series.push({m, bal:Math.max(bal,0), interest:paidInt});
+      }
+      return {series, totalInterest:paidInt, final:P+paidInt, payment, P, months};
+    }
+  }
+}
+
+// derive the effective (APR) rate of a loan from its payment schedule, via bisection
+function effectiveRate(P, payment, months){
+  if(P<=0||months<=0||payment<=0) return 0;
+  const pv = i => i===0 ? payment*months : payment*(1-Math.pow(1+i,-months))/i;
+  let lo=0, hi=1; // monthly rate 0%..100%
+  for(let k=0;k<80;k++){ const mid=(lo+hi)/2; if(pv(mid)>P) lo=mid; else hi=mid; }
+  return ((lo+hi)/2)*12*100; // annual %
+}
+
+function calc(){
+  const isDep = mode==='deposit';
+  // deposit: both sides use same method, different rate
+  // loan: A = effective(reducing), B = flat
+  const A = simulate(+$('rateA').value||0, 'reducing');
+  const B = simulate(+$('rateB').value||0, 'flat');
+
+  if(isDep){
+    $('rTagA').textContent = 'อัตรา A '+(+$('rateA').value||0)+'%';
+    $('rTagB').textContent = 'อัตรา B '+(+$('rateB').value||0)+'%';
+    $('totalA').textContent = baht(A.final)+' ฿';
+    $('totalB').textContent = baht(B.final)+' ฿';
+    $('subA').textContent = 'ดอกเบี้ยรับ '+baht(A.totalInterest)+' ฿';
+    $('subB').textContent = 'ดอกเบี้ยรับ '+baht(B.totalInterest)+' ฿';
+    const diff = Math.abs(A.totalInterest-B.totalInterest);
+    const better = A.totalInterest>B.totalInterest?'A':'B';
+    $('verdict').innerHTML = diff<0.5
+      ? 'ดอกเบี้ยรับเท่ากันทั้งสองอัตรา'
+      : `อัตรา <span>${better}</span> ได้ดอกเบี้ยมากกว่า <span>${baht(diff)} ฿</span> เมื่อสิ้นสุดระยะเวลา`;
+    $('footNote').textContent = 'ยอดเงินรวม = เงินต้น + ดอกเบี้ยรับสะสม (ก่อนหักภาษีดอกเบี้ย 15% หากเข้าเกณฑ์)';
+  } else {
+    const flatAPR = effectiveRate(B.P, B.payment, B.months);
+    $('rTagA').textContent = (+$('rateA').value||0)+'% Effective';
+    $('rTagB').textContent = (+$('rateB').value||0)+'% Flat';
+    $('totalA').textContent = baht(A.totalInterest)+' ฿';
+    $('totalB').textContent = baht(B.totalInterest)+' ฿';
+    $('subA').textContent = 'ผ่อน/งวด '+baht2(A.payment)+' ฿ · จ่ายรวม '+baht(A.final)+' ฿';
+    $('subB').innerHTML = 'ผ่อน/งวด '+baht2(B.payment)+' ฿ · จ่ายรวม '+baht(B.final)+' ฿'
+      + `<br><b style="color:var(--bad)">≈ ${flatAPR.toFixed(2)}% ต่อปีแบบ Effective จริง</b>`;
+    const diff = Math.abs(A.totalInterest-B.totalInterest);
+    const cheaper = A.totalInterest<B.totalInterest?'Effective (ลดต้นลดดอก)':'Flat';
+    $('verdict').innerHTML = diff<0.5
+      ? 'ดอกเบี้ยจ่ายเท่ากันทั้งสองแบบ'
+      : `แบบ <span>${cheaper}</span> จ่ายดอกเบี้ยน้อยกว่า <span>${baht(diff)} ฿</span> ตลอดสัญญา`;
+    $('footNote').innerHTML = `Flat ${(+$('rateB').value||0)}% เทียบเท่า Effective ~<b>${flatAPR.toFixed(2)}%</b> ต่อปี `
+      + `— เลขแบบ Flat ดูต่ำกว่า แต่จ่ายดอกเบี้ยจริงสูงกว่าเสมอเพราะคิดจากเงินต้นเต็มทุกงวด`;
+  }
+
+  buildTable(A,B,isDep);
+  drawChart(A,B,isDep);
+}
+
+function yearMarks(s){
+  // pick snapshots at each 12-month mark (+ final)
+  const out=[]; const last=s.series[s.series.length-1].m;
+  for(const p of s.series){ if(p.m%12===0 || p.m===last) out.push(p); }
+  // dedupe by m
+  return out.filter((p,i,a)=>i===0||p.m!==a[i-1].m);
+}
+
+function buildTable(A,B,isDep){
+  const ya=yearMarks(A), yb=yearMarks(B);
+  const rows=Math.max(ya.length,yb.length);
+  let html = `<thead><tr>
+      <th>เมื่อสิ้น</th>
+      <th><span class="dot a"></span> ${isDep?'ยอดเงิน A':'คงเหลือ A'}</th>
+      <th>ดอกเบี้ย A</th>
+      <th><span class="dot b"></span> ${isDep?'ยอดเงิน B':'คงเหลือ B'}</th>
+      <th>ดอกเบี้ย B</th>
+      <th>ส่วนต่าง</th>
+    </tr></thead><tbody>`;
+  for(let i=0;i<rows;i++){
+    const a=ya[i], b=yb[i]; if(!a&&!b) continue;
+    const m=(a||b).m;
+    const lbl = m===0?'เริ่มต้น':(m%12===0?`ปีที่ ${m/12}`:`เดือนที่ ${m}`);
+    const mainA = isDep ? (a?a.bal:0) : (a?a.bal:0);
+    const mainB = isDep ? (b?b.bal:0) : (b?b.bal:0);
+    const intA = a?a.interest:0, intB=b?b.interest:0;
+    const diff = Math.abs(intA-intB);
+    html+=`<tr>
+      <td>${lbl}</td>
+      <td>${baht(mainA)}</td><td>${baht(intA)}</td>
+      <td>${baht(mainB)}</td><td>${baht(intB)}</td>
+      <td class="hl">${m===0?'-':baht(diff)}</td>
+    </tr>`;
+  }
+  $('tbl').innerHTML = html+'</tbody>';
+}
+
+function drawChart(A,B,isDep){
+  const cv=$('chart'); const dpr=window.devicePixelRatio||1;
+  const W=cv.clientWidth, H=260;
+  cv.width=W*dpr; cv.height=H*dpr;
+  const ctx=cv.getContext('2d'); ctx.scale(dpr,dpr);
+  ctx.clearRect(0,0,W,H);
+  const pad={l:58,r:14,t:14,b:24};
+  const sa=A.series, sb=B.series;
+  const n=Math.max(sa.length,sb.length);
+  // value to plot: deposit -> balance ; loan -> cumulative interest
+  const val = (s,p)=> isDep ? p.bal : p.interest;
+  let maxV=0;
+  [sa,sb].forEach(s=>s.forEach(p=>maxV=Math.max(maxV,val(s,p))));
+  if(maxV<=0) maxV=1;
+  const minV = isDep ? Math.min(sa[0].bal, sb[0]?sb[0].bal:sa[0].bal) : 0;
+  const x=i=> pad.l + (W-pad.l-pad.r)*(i/(n-1||1));
+  const y=v=> pad.t + (H-pad.t-pad.b)*(1-(v-minV)/(maxV-minV||1));
+
+  // grid + y labels
+  ctx.strokeStyle='#33415544'; ctx.fillStyle='#94a3b8'; ctx.font='11px sans-serif';
+  ctx.textAlign='right'; ctx.textBaseline='middle';
+  for(let g=0;g<=4;g++){
+    const v=minV+(maxV-minV)*g/4; const yy=y(v);
+    ctx.beginPath();ctx.moveTo(pad.l,yy);ctx.lineTo(W-pad.r,yy);ctx.stroke();
+    ctx.fillText(baht(v), pad.l-8, yy);
+  }
+  function line(s,color){
+    ctx.strokeStyle=color; ctx.lineWidth=2.5; ctx.beginPath();
+    s.forEach((p,i)=>{ const xx=x(i), yy=y(val(s,p)); i?ctx.lineTo(xx,yy):ctx.moveTo(xx,yy); });
+    ctx.stroke();
+  }
+  line(sb, getCSS('--b'));
+  line(sa, getCSS('--a'));
+  // x labels (years)
+  ctx.fillStyle='#94a3b8'; ctx.textAlign='center'; ctx.textBaseline='top';
+  const lastM=sa[sa.length-1].m;
+  for(let m=0;m<=lastM;m+=12){
+    const i=sa.findIndex(p=>p.m===m); if(i<0)continue;
+    ctx.fillText(m===0?'0':(m/12)+'ปี', x(i), H-pad.b+6);
+  }
+}
+function getCSS(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
+
+window.addEventListener('resize',()=>calc());
+calc();
+</script>
+</body>
+</html>
