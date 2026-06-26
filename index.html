@@ -130,18 +130,24 @@
 
       <!-- deposit options -->
       <div id="depOpts">
+        <label>ฝากเพิ่มรายเดือน (บาท/เดือน)</label>
+        <input type="number" id="monthly" value="0" min="0" step="500">
+        <p class="note" style="margin-top:6px">ใส่ 0 ถ้าฝากครั้งเดียวก้อนเดียว · ระบบจะฝากเพิ่มทุกสิ้นเดือน</p>
+
         <label>วิธีคิดดอกเบี้ย</label>
         <div class="seg" id="depMethod">
           <button data-v="compound" class="on">ทบต้น</button>
-          <button data-v="simple">ดอกเบี้ยคงที่</button>
+          <button data-v="simple">ไม่ทบต้น</button>
         </div>
-        <label>ความถี่ทบต้น</label>
-        <select id="compFreq">
-          <option value="12">รายเดือน</option>
-          <option value="4">รายไตรมาส</option>
-          <option value="2">ราย 6 เดือน</option>
-          <option value="1">รายปี</option>
-        </select>
+        <div id="compFreqWrap">
+          <label>ความถี่ทบต้น</label>
+          <select id="compFreq">
+            <option value="12">รายเดือน</option>
+            <option value="4">รายไตรมาส</option>
+            <option value="2">ราย 6 เดือน</option>
+            <option value="1">รายปี</option>
+          </select>
+        </div>
       </div>
 
       <!-- loan options -->
@@ -235,23 +241,32 @@ function simulate(rate, loanMethod){
   let totalInterest = 0, payment = 0;
 
   if(mode==='deposit'){
+    const d = +$('monthly').value || 0;       // monthly deposit added each month-end
     if(depMethod==='simple'){
+      // ไม่ทบต้น: ดอกเบี้ยคิดแยก ไม่นำไปทบกับเงินต้นที่หมุนต่อ
+      let principalBal = P, accInt = 0;
       for(let m=1;m<=months;m++){
-        const intTotal = P * r * (m/12);
-        series.push({m, bal:P+intTotal, interest:intTotal});
+        accInt += principalBal * (r/12);       // ดอกเบี้ยเดือนนี้จากเงินต้นปัจจุบัน
+        principalBal += d;                      // ฝากเพิ่มสิ้นเดือน (เริ่มได้ดอกเดือนถัดไป)
+        const contributed = P + d*m;
+        series.push({m, bal:principalBal+accInt, interest:accInt, contributed});
       }
-      totalInterest = P*r*(months/12);
-      return {series, totalInterest, final:P+totalInterest, payment:0, P, months};
+      totalInterest = accInt;
+      const contributed = P + d*months;
+      return {series, totalInterest, final:contributed+accInt, payment:0, P, months, contributed};
     } else {
       const f = +$('compFreq').value;        // compounding per year
       const periodMonths = 12/f;
       let bal = P;
       for(let m=1;m<=months;m++){
+        bal += d;                             // ฝากเพิ่มสิ้นเดือน
         if(m % periodMonths === 0) bal *= (1 + r/f);
-        series.push({m, bal, interest:bal-P});
+        const contributed = P + d*m;
+        series.push({m, bal, interest:bal-contributed, contributed});
       }
-      totalInterest = bal - P;
-      return {series, totalInterest, final:bal, payment:0, P, months};
+      const contributed = P + d*months;
+      totalInterest = bal - contributed;
+      return {series, totalInterest, final:bal, payment:0, P, months, contributed};
     }
   } else {
     // loan
@@ -297,7 +312,11 @@ function calc(){
   const A = simulate(+$('rateA').value||0, 'reducing');
   const B = simulate(+$('rateB').value||0, 'flat');
 
+  // ซ่อนความถี่ทบต้นเมื่อเลือกไม่ทบต้น
+  $('compFreqWrap').classList.toggle('hide', depMethod==='simple');
+
   if(isDep){
+    const d = +$('monthly').value || 0;
     $('rTagA').textContent = 'อัตรา A '+(+$('rateA').value||0)+'%';
     $('rTagB').textContent = 'อัตรา B '+(+$('rateB').value||0)+'%';
     $('totalA').textContent = baht(A.final)+' ฿';
@@ -309,7 +328,12 @@ function calc(){
     $('verdict').innerHTML = diff<0.5
       ? 'ดอกเบี้ยรับเท่ากันทั้งสองอัตรา'
       : `อัตรา <span>${better}</span> ได้ดอกเบี้ยมากกว่า <span>${baht(diff)} ฿</span> เมื่อสิ้นสุดระยะเวลา`;
-    $('footNote').textContent = 'ยอดเงินรวม = เงินต้น + ดอกเบี้ยรับสะสม (ก่อนหักภาษีดอกเบี้ย 15% หากเข้าเกณฑ์)';
+    const depNote = d>0
+      ? `เงินต้นรวมที่ฝาก ${baht(A.contributed)} ฿ (ก้อนแรก ${baht(A.P)} + รายเดือน ${baht(d)}×${A.months} เดือน) · `
+      : '';
+    $('footNote').textContent = depNote + (depMethod==='simple'
+      ? 'แบบไม่ทบต้น: ดอกเบี้ยไม่ถูกนำไปคิดดอกซ้ำ'
+      : 'ยอดเงินรวม = เงินต้นที่ฝาก + ดอกเบี้ยทบต้นสะสม (ก่อนหักภาษีดอกเบี้ย 15% หากเข้าเกณฑ์)');
   } else {
     const flatAPR = effectiveRate(B.P, B.payment, B.months);
     $('rTagA').textContent = (+$('rateA').value||0)+'% Effective';
