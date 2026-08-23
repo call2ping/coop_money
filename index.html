@@ -56,6 +56,7 @@
     cursor:pointer;font-family:inherit;font-size:.9rem;font-weight:600;
   }
   .seg button.on{background:var(--accent);color:#3a2c04}
+  .seg.sm button{font-size:.8rem;padding:8px 4px}
 
   /* results */
   .cards2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
@@ -89,7 +90,7 @@
 <div class="wrap">
   <header>
     <h1>💰 เปรียบเทียบดอกเบี้ย</h1>
-    <p>เทียบ 2 อัตราที่ต่างกัน สำหรับ เงินฝาก หรือ เงินกู้ ในระยะเวลาที่ต้องการ</p>
+    <p>เทียบ 2 อัตราที่ต่างกัน สำหรับ เงินฝาก หรือ เงินกู้ — คิดดอกเบี้ยรายวัน ฐาน 365 วัน แบบสหกรณ์</p>
   </header>
 
   <div class="tabs">
@@ -116,6 +117,10 @@
         </div>
       </div>
 
+      <label id="lblStart">วันที่เริ่ม (วันฝาก / วันรับเงินกู้)</label>
+      <input type="date" id="startDate">
+      <p class="note" style="margin-top:6px">ดอกเบี้ยคิดตาม<b>จำนวนวันจริง</b>ของแต่ละเดือน หารด้วย 365 — เดือนที่มี 31 วันจึงได้ดอกมากกว่าเดือน ก.พ.</p>
+
       <label id="lblRate">อัตราดอกเบี้ยต่อปี (%)</label>
       <div class="row">
         <div>
@@ -132,19 +137,19 @@
       <div id="depOpts">
         <label>ฝากเพิ่มรายเดือน (บาท/เดือน)</label>
         <input type="number" id="monthly" value="0" min="0" step="500">
-        <p class="note" style="margin-top:6px">ใส่ 0 ถ้าฝากครั้งเดียวก้อนเดียว · ระบบจะฝากเพิ่มทุกสิ้นเดือน</p>
+        <p class="note" style="margin-top:6px">ใส่ 0 ถ้าฝากครั้งเดียวก้อนเดียว · ฝากเพิ่มทุกวันครบรอบเดือน และเริ่มได้ดอกเบี้ยวันถัดไป</p>
 
-        <label>วิธีคิดดอกเบี้ย</label>
+        <label>ดอกเบี้ยที่ตั้งจ่าย</label>
         <div class="seg" id="depMethod">
-          <button data-v="compound" class="on">ทบต้น</button>
-          <button data-v="simple">ไม่ทบต้น</button>
+          <button data-v="compound" class="on">ทบเข้าบัญชี</button>
+          <button data-v="simple">รับออกไป (ไม่ทบ)</button>
         </div>
         <div id="compFreqWrap">
-          <label>ความถี่ทบต้น</label>
+          <label>ความถี่ตั้งจ่าย/ทบดอกเบี้ย</label>
           <select id="compFreq">
             <option value="12">รายเดือน</option>
             <option value="4">รายไตรมาส</option>
-            <option value="2">ราย 6 เดือน</option>
+            <option value="2" selected>ราย 6 เดือน (สหกรณ์ส่วนใหญ่)</option>
             <option value="1">รายปี</option>
           </select>
         </div>
@@ -152,11 +157,30 @@
 
       <!-- loan options -->
       <div id="loanOpts" class="hide">
-        <p class="note" style="margin-top:0;background:var(--card2);padding:12px;border-radius:10px;border:1px solid var(--line)">
-          🔍 โหมดเงินกู้เทียบ <b style="color:var(--a)">Effective Rate (ลดต้นลดดอก)</b> กับ
-          <b style="color:var(--b)">Flat Rate (คงที่)</b><br>
-          • <b>Effective</b> = ดอกเบี้ยคิดจากเงินต้นคงเหลือ ผ่อนเท่ากันทุกงวด (สินเชื่อบ้าน/บุคคล)<br>
-          • <b>Flat</b> = ดอกเบี้ยคิดจากเงินต้นเต็มจำนวนทุกงวด (เช่าซื้อรถ) — กรอกตัวเลขเท่ากันก็ยังจ่ายแพงกว่า
+        <label>รูปแบบการชำระของแต่ละฝั่ง</label>
+        <div class="row">
+          <div>
+            <span style="font-size:.78rem;color:var(--a)"><span class="dot a"></span> ฝั่ง A</span>
+            <select id="loanMethodA" style="margin-top:6px">
+              <option value="coop" selected>สหกรณ์: ต้นเท่ากัน + ดอกรายวัน</option>
+              <option value="annuity">ธนาคาร: ผ่อนเท่ากันทุกงวด</option>
+              <option value="flat">Flat: ดอกคงที่จากต้นเต็ม</option>
+            </select>
+          </div>
+          <div>
+            <span style="font-size:.78rem;color:var(--b)"><span class="dot b"></span> ฝั่ง B</span>
+            <select id="loanMethodB" style="margin-top:6px">
+              <option value="coop">สหกรณ์: ต้นเท่ากัน + ดอกรายวัน</option>
+              <option value="annuity">ธนาคาร: ผ่อนเท่ากันทุกงวด</option>
+              <option value="flat" selected>Flat: ดอกคงที่จากต้นเต็ม</option>
+            </select>
+          </div>
+        </div>
+        <p class="note" style="margin-top:12px;background:var(--card2);padding:12px;border-radius:10px;border:1px solid var(--line)">
+          🔍 เลือกอัตราและรูปแบบของแต่ละฝั่งได้อิสระ — จะเทียบสหกรณ์กับสหกรณ์ หรือข้ามแบบก็ได้<br>
+          • <b>สหกรณ์</b> = ส่งเงินต้นเท่ากันทุกงวด บวกดอกเบี้ยรายวันที่เกิดขึ้นจริงจากยอดคงเหลือ → ค่างวดลดลงเรื่อย ๆ<br>
+          • <b>ธนาคาร</b> = ลดต้นลดดอกเหมือนกัน แต่เกลี่ยให้ผ่อนเท่ากันทุกงวด (คืนเงินต้นช้ากว่า จึงเสียดอกรวมมากกว่าเล็กน้อย)<br>
+          • <b>Flat</b> = ดอกเบี้ยคิดจากเงินต้นเต็มจำนวนตลอดสัญญา (เช่าซื้อรถ) — กรอกตัวเลขเท่ากันก็ยังจ่ายแพงกว่ามาก
         </p>
       </div>
     </div>
@@ -182,8 +206,8 @@
 
       <canvas id="chart"></canvas>
       <div class="legend">
-        <span><span class="dot a"></span> อัตรา A</span>
-        <span><span class="dot b"></span> อัตรา B</span>
+        <span id="legA"><span class="dot a"></span> อัตรา A</span>
+        <span id="legB"><span class="dot b"></span> อัตรา B</span>
       </div>
 
       <h2 style="margin-top:22px">📅 ตารางรายปี</h2>
@@ -203,6 +227,25 @@ const baht2 = n => n.toLocaleString('th-TH',{minimumFractionDigits:2,maximumFrac
 let mode = 'deposit';
 let depMethod = 'compound';
 
+const M_TH = {coop:'ต้นเท่ากัน (สหกรณ์)', annuity:'ผ่อนเท่ากัน (ธนาคาร)', flat:'Flat คงที่'};
+const M_SHORT = {coop:'ต้นเท่ากัน', annuity:'ผ่อนเท่ากัน', flat:'Flat'};
+const lmA = () => $('loanMethodA').value;
+const lmB = () => $('loanMethodB').value;
+
+// ---- labels ที่ขึ้นกับโหมด + รูปแบบการชำระของแต่ละฝั่ง ----
+function updateLabels(){
+  const dep = mode==='deposit';
+  $('lblPrincipal').textContent = dep ? 'เงินต้น / ยอดฝาก (บาท)' : 'วงเงินกู้ (บาท)';
+  $('lblRate').textContent = dep ? 'อัตราดอกเบี้ยต่อปี (%)' : 'อัตราดอกเบี้ยที่ระบุต่อปี (%)';
+  $('lblStart').textContent = dep ? 'วันที่ฝาก' : 'วันที่รับเงินกู้';
+  const tagA = dep ? 'อัตรา A' : `อัตรา A \u00b7 ${M_TH[lmA()]}`;
+  const tagB = dep ? 'อัตรา B' : `อัตรา B \u00b7 ${M_TH[lmB()]}`;
+  $('rateLabelA').innerHTML = '<span class="dot a"></span> '+tagA;
+  $('rateLabelB').innerHTML = '<span class="dot b"></span> '+tagB;
+  $('legA').innerHTML = '<span class="dot a"></span> '+tagA;
+  $('legB').innerHTML = '<span class="dot b"></span> '+tagB;
+}
+
 // ---- tab + segment handlers ----
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
   mode = t.dataset.mode;
@@ -210,15 +253,7 @@ document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
   document.body.className = mode;
   $('depOpts').classList.toggle('hide', mode!=='deposit');
   $('loanOpts').classList.toggle('hide', mode!=='loan');
-  const dep = mode==='deposit';
-  $('lblPrincipal').textContent = dep ? 'เงินต้น / ยอดฝาก (บาท)' : 'วงเงินกู้ (บาท)';
-  $('lblRate').textContent = dep ? 'อัตราดอกเบี้ยต่อปี (%)' : 'อัตราดอกเบี้ยที่ระบุต่อปี (%)';
-  $('rateLabelA').innerHTML = dep
-    ? '<span class="dot a"></span> อัตรา A'
-    : '<span class="dot a"></span> Effective (ลดต้นลดดอก)';
-  $('rateLabelB').innerHTML = dep
-    ? '<span class="dot b"></span> อัตรา B'
-    : '<span class="dot b"></span> Flat (คงที่)';
+  updateLabels();
   calc();
 });
 function seg(containerId, cb){
@@ -228,97 +263,149 @@ function seg(containerId, cb){
   });
 }
 seg('depMethod', v=>depMethod=v);
+$('loanMethodA').addEventListener('change', updateLabels);
+$('loanMethodB').addEventListener('change', updateLabels);
 document.querySelectorAll('input,select').forEach(el=>el.addEventListener('input',calc));
 
-// ---- core math: returns yearly series ----
-// deposit: balance over time. loan: remaining + cumulative interest
-// loanMethod ('reducing'|'flat') only used in loan mode
-function simulate(rate, loanMethod){
+// ============================================================
+//  ฐานคิดดอกเบี้ยแบบสหกรณ์: รายวัน = ยอดคงเหลือ \u00d7 อัตรา \u00d7 จำนวนวัน / 365
+// ============================================================
+const DAY = 86400000;
+const BASIS = 365;                       // สหกรณ์หารด้วย 365 วันเสมอ
+
+function startDate(){
+  const midnight = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const v = $('startDate').value;
+  const d = v ? new Date(v+'T00:00:00') : new Date();
+  return midnight(isNaN(d.getTime()) ? new Date() : d);
+}
+// วันครบงวดที่ k นับจากวันเริ่ม (กันวันล้นเดือน เช่น 31 ม.ค. -> 28/29 ก.พ.)
+function addMonths(d0, k){
+  const day = d0.getDate();
+  const d = new Date(d0.getFullYear(), d0.getMonth()+k, 1);
+  const last = new Date(d.getFullYear(), d.getMonth()+1, 0).getDate();
+  d.setDate(Math.min(day, last));
+  return d;
+}
+// ตารางงวด: จำนวนวันจริงของแต่ละงวด + วันสะสมนับจากวันเริ่ม
+function schedule(n){
+  const s0 = startDate();
+  const out = []; let prev = s0, acc = 0;
+  for(let k=1;k<=n;k++){
+    const d = addMonths(s0,k);
+    const days = Math.round((d-prev)/DAY);
+    acc += days;
+    out.push({k, date:d, days, acc});
+    prev = d;
+  }
+  return out;
+}
+
+// ---- core math: returns monthly series ----
+// deposit: ยอดเงินตามเวลา | loan: ยอดคงเหลือ + ดอกเบี้ยสะสม
+// method ('coop'|'annuity'|'flat') ใช้เฉพาะโหมดเงินกู้
+function simulate(rate, method){
   const P = +$('principal').value || 0;
   const months = (+$('duration').value || 0) * (+$('durUnit').value);
   const r = rate/100;
-  const series = [{m:0, bal:P, interest:0, principalPaid:0}]; // monthly snapshots at year marks
-  let totalInterest = 0, payment = 0;
+  const sch = schedule(months);
+  const totalDays = sch.length ? sch[sch.length-1].acc : 0;
+  const series = [{m:0, bal:P, interest:0, contributed:P, pay:0}];
 
   if(mode==='deposit'){
-    const d = +$('monthly').value || 0;       // monthly deposit added each month-end
-    if(depMethod==='simple'){
-      // ไม่ทบต้น: ดอกเบี้ยคิดแยก ไม่นำไปทบกับเงินต้นที่หมุนต่อ
-      let principalBal = P, accInt = 0;
-      for(let m=1;m<=months;m++){
-        accInt += principalBal * (r/12);       // ดอกเบี้ยเดือนนี้จากเงินต้นปัจจุบัน
-        principalBal += d;                      // ฝากเพิ่มสิ้นเดือน (เริ่มได้ดอกเดือนถัดไป)
-        const contributed = P + d*m;
-        series.push({m, bal:principalBal+accInt, interest:accInt, contributed});
-      }
-      totalInterest = accInt;
-      const contributed = P + d*months;
-      return {series, totalInterest, final:contributed+accInt, payment:0, P, months, contributed};
-    } else {
-      const f = +$('compFreq').value;        // compounding per year
-      const periodMonths = 12/f;
-      let bal = P;
-      for(let m=1;m<=months;m++){
-        bal += d;                             // ฝากเพิ่มสิ้นเดือน
-        if(m % periodMonths === 0) bal *= (1 + r/f);
-        const contributed = P + d*m;
-        series.push({m, bal, interest:bal-contributed, contributed});
-      }
-      const contributed = P + d*months;
-      totalInterest = bal - contributed;
-      return {series, totalInterest, final:bal, payment:0, P, months, contributed};
+    const d = +$('monthly').value || 0;      // ฝากเพิ่มทุกวันครบรอบเดือน
+    const compound = depMethod==='compound';
+    const every = 12/(+$('compFreq').value); // ทบ/ตั้งจ่ายทุกกี่เดือน
+    let bal = P, pending = 0;                // pending = ดอกค้างรับที่ยังไม่ตั้งจ่าย
+    for(const p of sch){
+      pending += bal * r * p.days / BASIS;   // ดอกเบี้ยรายวันของงวดนี้จากยอดคงเหลือ
+      if(compound && p.k % every === 0){ bal += pending; pending = 0; }  // ทบเข้าบัญชี
+      bal += d;                              // ฝากเพิ่ม แล้วเริ่มได้ดอกวันถัดไป
+      const contributed = P + d*p.k;
+      const total = bal + pending;
+      series.push({m:p.k, bal:total, interest:total-contributed, contributed, pay:0});
+    }
+    const contributed = P + d*months;
+    const final = bal + pending;
+    return {series, totalInterest:final-contributed, final, payment:0,
+            firstPay:0, lastPay:0, P, months, contributed, sch, totalDays, flows:[]};
+  }
+
+  // ---------------- loan ----------------
+  const n = sch.length;
+  const rows = [], flows = [];
+  let bal = P, paidInt = 0, firstPay = 0, lastPay = 0;
+
+  if(method==='flat'){
+    // ดอกเบี้ยคงที่จากเงินต้นเต็มจำนวนตลอดอายุสัญญา
+    const totalInt = P * r * totalDays / BASIS;
+    const perPrin = n ? P/n : 0, perInt = n ? totalInt/n : 0;
+    for(const p of sch){
+      paidInt += perInt; bal -= perPrin;
+      const pay = perPrin + perInt;
+      if(p.k===1) firstPay = pay; lastPay = pay;
+      flows.push({days:p.acc, amount:pay});
+      rows.push({m:p.k, bal:Math.max(bal,0), interest:paidInt, pay});
+    }
+  } else if(method==='coop'){
+    // แบบสหกรณ์: ส่งเงินต้นเท่ากันทุกงวด + ดอกเบี้ยรายวันที่เกิดขึ้นจริง
+    const perPrin = n ? P/n : 0;
+    for(const p of sch){
+      const intM = bal * r * p.days / BASIS;
+      paidInt += intM; bal -= perPrin;
+      const pay = perPrin + intM;
+      if(p.k===1) firstPay = pay; lastPay = pay;
+      flows.push({days:p.acc, amount:pay});
+      rows.push({m:p.k, bal:Math.max(bal,0), interest:paidInt, pay});
     }
   } else {
-    // loan
-    if(loanMethod==='flat'){
-      const totalInt = P * r * (months/12);
-      payment = (P + totalInt)/months;
-      let paidInt=0, bal=P;
-      const perInt = totalInt/months, perPrin = P/months;
-      for(let m=1;m<=months;m++){
-        paidInt += perInt; bal -= perPrin;
-        series.push({m, bal:Math.max(bal,0), interest:paidInt});
-      }
-      return {series, totalInterest:totalInt, final:P+totalInt, payment, P, months};
-    } else {
-      // reducing balance amortization
-      const i = r/12;
-      payment = i===0 ? P/months : P*i/(1-Math.pow(1+i,-months));
-      let bal=P, paidInt=0;
-      for(let m=1;m<=months;m++){
-        const intM = bal*i;
-        const prinM = payment-intM;
-        bal -= prinM; paidInt += intM;
-        series.push({m, bal:Math.max(bal,0), interest:paidInt});
-      }
-      return {series, totalInterest:paidInt, final:P+paidInt, payment, P, months};
+    // แบบธนาคาร: ผ่อนเท่ากันทุกงวดบนฐานดอกเบี้ยรายวัน -> หาค่างวดด้วย bisection
+    const resid = pay => {
+      let b = P;
+      for(const p of sch) b += b*r*p.days/BASIS - pay;
+      return b;
+    };
+    let lo = 0, hi = P*(1 + r*totalDays/BASIS) + 1;
+    for(let k=0;k<120;k++){ const mid=(lo+hi)/2; if(resid(mid)>0) lo=mid; else hi=mid; }
+    const pay = (lo+hi)/2;
+    for(const p of sch){
+      const intM = bal * r * p.days / BASIS;
+      const prin = p.k===n ? bal : pay - intM;      // งวดสุดท้ายปิดยอดพอดี
+      const amt  = prin + intM;
+      paidInt += intM; bal -= prin;
+      if(p.k===1) firstPay = amt; lastPay = amt;
+      flows.push({days:p.acc, amount:amt});
+      rows.push({m:p.k, bal:Math.max(bal,0), interest:paidInt, pay:amt});
     }
   }
+  series.push(...rows);
+  return {series, totalInterest:paidInt, final:P+paidInt, payment:firstPay,
+          firstPay, lastPay, P, months:n, sch, totalDays, flows};
 }
 
-// derive the effective (APR) rate of a loan from its payment schedule, via bisection
-function effectiveRate(P, payment, months){
-  if(P<=0||months<=0||payment<=0) return 0;
-  const pv = i => i===0 ? payment*months : payment*(1-Math.pow(1+i,-months))/i;
-  let lo=0, hi=1; // monthly rate 0%..100%
-  for(let k=0;k<80;k++){ const mid=(lo+hi)/2; if(pv(mid)>P) lo=mid; else hi=mid; }
-  return ((lo+hi)/2)*12*100; // annual %
+// อัตราดอกเบี้ยที่แท้จริงต่อปี (EIR) จากกระแสค่างวดจริง — ทบต้นรายวัน ฐาน 365
+function effectiveRate(P, flows){
+  if(P<=0 || !flows || !flows.length) return 0;
+  const pv = y => flows.reduce((sum,f)=> sum + f.amount/Math.pow(1+y/BASIS, f.days), 0);
+  let lo = 0, hi = 5;                       // 0% .. 500% ต่อปี
+  if(pv(hi) > P) return hi*100;
+  for(let k=0;k<200;k++){ const mid=(lo+hi)/2; if(pv(mid)>P) lo=mid; else hi=mid; }
+  return ((lo+hi)/2)*100;
 }
 
 function calc(){
   const isDep = mode==='deposit';
-  // deposit: both sides use same method, different rate
-  // loan: A = effective(reducing), B = flat
-  const A = simulate(+$('rateA').value||0, 'reducing');
-  const B = simulate(+$('rateB').value||0, 'flat');
+  const rA = +$('rateA').value||0, rB = +$('rateB').value||0;
+  const A = simulate(rA, isDep ? 'coop' : lmA());
+  const B = simulate(rB, isDep ? 'flat' : lmB());
 
-  // ซ่อนความถี่ทบต้นเมื่อเลือกไม่ทบต้น
+  // ซ่อนความถี่ตั้งจ่ายเมื่อเลือกไม่ทบ (ผลลัพธ์ไม่ต่างกัน เพราะดอกที่รับออกไปไม่งอกต่อ)
   $('compFreqWrap').classList.toggle('hide', depMethod==='simple');
 
   if(isDep){
     const d = +$('monthly').value || 0;
-    $('rTagA').textContent = 'อัตรา A '+(+$('rateA').value||0)+'%';
-    $('rTagB').textContent = 'อัตรา B '+(+$('rateB').value||0)+'%';
+    $('rTagA').textContent = 'อัตรา A '+rA+'%';
+    $('rTagB').textContent = 'อัตรา B '+rB+'%';
     $('totalA').textContent = baht(A.final)+' ฿';
     $('totalB').textContent = baht(B.final)+' ฿';
     $('subA').textContent = 'ดอกเบี้ยรับ '+baht(A.totalInterest)+' ฿';
@@ -329,27 +416,45 @@ function calc(){
       ? 'ดอกเบี้ยรับเท่ากันทั้งสองอัตรา'
       : `อัตรา <span>${better}</span> ได้ดอกเบี้ยมากกว่า <span>${baht(diff)} ฿</span> เมื่อสิ้นสุดระยะเวลา`;
     const depNote = d>0
-      ? `เงินต้นรวมที่ฝาก ${baht(A.contributed)} ฿ (ก้อนแรก ${baht(A.P)} + รายเดือน ${baht(d)}×${A.months} เดือน) · `
+      ? `เงินต้นรวมที่ฝาก ${baht(A.contributed)} ฿ (ก้อนแรก ${baht(A.P)} + รายเดือน ${baht(d)}\u00d7${A.months} งวด) \u00b7 `
       : '';
-    $('footNote').textContent = depNote + (depMethod==='simple'
-      ? 'แบบไม่ทบต้น: ดอกเบี้ยไม่ถูกนำไปคิดดอกซ้ำ'
-      : 'ยอดเงินรวม = เงินต้นที่ฝาก + ดอกเบี้ยทบต้นสะสม (ก่อนหักภาษีดอกเบี้ย 15% หากเข้าเกณฑ์)');
+    $('footNote').innerHTML = depNote
+      + `คิดดอกเบี้ยรายวันจากยอดคงเหลือ รวม ${A.totalDays} วัน (ฐาน 365) \u00b7 `
+      + (depMethod==='simple'
+          ? 'ดอกเบี้ยที่ตั้งจ่ายถูกรับออกไป ไม่นำกลับมาคิดดอกซ้ำ'
+          : 'ดอกเบี้ยที่ตั้งจ่ายถูกทบเข้าบัญชี แล้วเดินดอกต่อในงวดถัดไป')
+      + '<br>ดอกเบี้ยเงินฝากในสหกรณ์ได้รับยกเว้นภาษีเงินได้บุคคลธรรมดา (ไม่ถูกหัก 15% เหมือนเงินฝากธนาคาร)';
   } else {
-    const flatAPR = effectiveRate(B.P, B.payment, B.months);
-    $('rTagA').textContent = (+$('rateA').value||0)+'% Effective';
-    $('rTagB').textContent = (+$('rateB').value||0)+'% Flat';
+    const eirA = effectiveRate(A.P, A.flows), eirB = effectiveRate(B.P, B.flows);
+    const mA = lmA(), mB = lmB();
+    $('rTagA').textContent = `${rA}% \u00b7 ${M_SHORT[mA]}`;
+    $('rTagB').textContent = `${rB}% \u00b7 ${M_SHORT[mB]}`;
     $('totalA').textContent = baht(A.totalInterest)+' ฿';
     $('totalB').textContent = baht(B.totalInterest)+' ฿';
-    $('subA').textContent = 'ผ่อน/งวด '+baht2(A.payment)+' ฿ · จ่ายรวม '+baht(A.final)+' ฿';
-    $('subB').innerHTML = 'ผ่อน/งวด '+baht2(B.payment)+' ฿ · จ่ายรวม '+baht(B.final)+' ฿'
-      + `<br><b style="color:var(--bad)">≈ ${flatAPR.toFixed(2)}% ต่อปีแบบ Effective จริง</b>`;
+    const payTxt = X => Math.abs(X.firstPay-X.lastPay) > 0.5
+      ? 'ผ่อนงวดแรก '+baht2(X.firstPay)+' ฿ \u2192 งวดสุดท้าย '+baht2(X.lastPay)+' ฿'
+      : 'ผ่อน/งวด '+baht2(X.firstPay)+' ฿';
+    const eirTxt = (quoted, eir) => {
+      const off = eir - quoted > 0.1;
+      return `<br><b style="color:var(${off?'--bad':'--good'})">EIR จริง \u2248 ${eir.toFixed(2)}% ต่อปี</b>`;
+    };
+    $('subA').innerHTML = payTxt(A)+' \u00b7 จ่ายรวม '+baht(A.final)+' ฿'+eirTxt(rA, eirA);
+    $('subB').innerHTML = payTxt(B)+' \u00b7 จ่ายรวม '+baht(B.final)+' ฿'+eirTxt(rB, eirB);
     const diff = Math.abs(A.totalInterest-B.totalInterest);
-    const cheaper = A.totalInterest<B.totalInterest?'Effective (ลดต้นลดดอก)':'Flat';
+    const cheaper = A.totalInterest<B.totalInterest
+      ? `A \u00b7 ${rA}% ${M_SHORT[mA]}` : `B \u00b7 ${rB}% ${M_SHORT[mB]}`;
     $('verdict').innerHTML = diff<0.5
-      ? 'ดอกเบี้ยจ่ายเท่ากันทั้งสองแบบ'
-      : `แบบ <span>${cheaper}</span> จ่ายดอกเบี้ยน้อยกว่า <span>${baht(diff)} ฿</span> ตลอดสัญญา`;
-    $('footNote').innerHTML = `Flat ${(+$('rateB').value||0)}% เทียบเท่า Effective ~<b>${flatAPR.toFixed(2)}%</b> ต่อปี `
-      + `— เลขแบบ Flat ดูต่ำกว่า แต่จ่ายดอกเบี้ยจริงสูงกว่าเสมอเพราะคิดจากเงินต้นเต็มทุกงวด`;
+      ? 'ดอกเบี้ยจ่ายเท่ากันทั้งสองฝั่ง'
+      : `ฝั่ง <span>${cheaper}</span> จ่ายดอกเบี้ยน้อยกว่า <span>${baht(diff)} ฿</span> ตลอดสัญญา`;
+    const notes = [];
+    if(mA==='flat') notes.push(`ฝั่ง A: Flat ${rA}% \u2248 EIR <b>${eirA.toFixed(2)}%</b>`);
+    if(mB==='flat') notes.push(`ฝั่ง B: Flat ${rB}% \u2248 EIR <b>${eirB.toFixed(2)}%</b>`);
+    $('footNote').innerHTML =
+      `ดอกเบี้ยรายวันจากยอดคงเหลือ ฐาน 365 วัน รวม ${A.totalDays} วัน (${A.months} งวด) \u00b7 `
+      + `งวดที่มี 31 วันเสียดอกมากกว่างวด ก.พ.`
+      + (notes.length
+          ? '<br>'+notes.join(' \u00b7 ')+' \u2014 เลข Flat ดูต่ำกว่าแต่จ่ายจริงแพงกว่าเสมอ ให้เทียบกันที่ EIR'
+          : '<br>ทั้งสองฝั่งเป็นแบบลดต้นลดดอก จึงเทียบอัตราที่ระบุกันตรง ๆ ได้');
   }
 
   buildTable(A,B,isDep);
@@ -437,6 +542,13 @@ function drawChart(A,B,isDep){
 function getCSS(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
 
 window.addEventListener('resize',()=>calc());
+// ตั้งวันที่เริ่มเป็นวันนี้
+(function(){
+  const t = new Date();
+  const pad = v => String(v).padStart(2,'0');
+  $('startDate').value = `${t.getFullYear()}-${pad(t.getMonth()+1)}-${pad(t.getDate())}`;
+})();
+updateLabels();
 calc();
 </script>
 </body>
